@@ -134,7 +134,11 @@ impl<'l> Inliner<'l> {
     {
         for (_, mid_, mdef) in prog.modules.iter_mut() {
             self.current_module = Some(*mid_);
-            if mode == VisitingMode::All || mdef.is_source_module {
+            let visit_module = match mode {
+                VisitingMode::All => true,
+                VisitingMode::SourceOnly => mdef.is_source_module,
+            };
+            if visit_module {
                 for (loc, fname, fdef) in mdef.functions.iter_mut() {
                     self.current_function = *fname;
                     self.current_function_loc = Some(loc);
@@ -173,7 +177,7 @@ impl<'l, 'r> Visitor for OuterVisitor<'l, 'r> {
             UnannotatedExp_::ModuleCall(mcall) => {
                 if let Some(repl) = self.inliner.module_call(ex.exp.loc, mcall.as_mut()) {
                     ex.exp.value = repl;
-                    VisitorContinuation::Stop
+                    VisitorContinuation::Descend
                 } else {
                     VisitorContinuation::Descend
                 }
@@ -943,7 +947,7 @@ fn visit_type(subs: &BTreeMap<TParamID, Type>, ty: &mut Type) -> VisitorContinua
     if let Type_::Param(p) = &ty.value {
         if let Some(rty) = subs.get(&p.id) {
             *ty = rty.clone();
-            return VisitorContinuation::Stop;
+            return VisitorContinuation::Descend;
         }
     }
     VisitorContinuation::Descend
