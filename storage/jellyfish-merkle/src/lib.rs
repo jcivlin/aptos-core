@@ -474,7 +474,7 @@ where
             batch.put_stale_node(node_key.clone(), version);
         }
 
-        if kvs.len() == 0 {
+        if kvs.is_empty() {
             return Ok(node_opt);
         }
 
@@ -709,8 +709,8 @@ where
                         // sharding, skip the siblings.
                         let (only_child_nibble, Child { version, .. }) =
                             internal_node.children_sorted().next().unwrap();
-                        next_node_key = next_node_key
-                            .gen_child_node_key(version.clone(), only_child_nibble.clone());
+                        next_node_key =
+                            next_node_key.gen_child_node_key(*version, *only_child_nibble);
                         continue;
                     }
                     let queried_child_index = nibble_iter
@@ -726,13 +726,16 @@ where
                     next_node_key = match child_node_key {
                         Some(node_key) => node_key,
                         None => {
+                            aptos_logger::info!(
+                                "return non-inclusive proof for key {key:?}, next_node_key {next_node_key:?}, depth {nibble_depth}, internal_node {internal_node:?}, queried_child_index {queried_child_index:?}"
+                            );
                             return Ok((
                                 None,
                                 SparseMerkleProofExt::new(None, {
                                     siblings.reverse();
                                     siblings
                                 }),
-                            ))
+                            ));
                         },
                     };
                 },
@@ -741,6 +744,9 @@ where
                         if leaf_node.account_key() == key {
                             Some((leaf_node.value_hash(), leaf_node.value_index().clone()))
                         } else {
+                            aptos_logger::info!(
+                                "return non-inclusive proof for key {key:?}, next_node_key {next_node_key:?}, leaf_node {:?}, depth {nibble_depth}", leaf_node.account_key()
+                            );
                             None
                         },
                         SparseMerkleProofExt::new(Some(leaf_node.into()), {
@@ -750,6 +756,7 @@ where
                     ));
                 },
                 Node::Null => {
+                    panic!("");
                     return Ok((None, SparseMerkleProofExt::new(None, vec![])));
                 },
             }
@@ -1017,13 +1024,11 @@ trait NibbleExt {
 impl NibbleExt for HashValue {
     /// Returns the `index`-th nibble.
     fn get_nibble(&self, index: usize) -> Nibble {
-        Nibble::from(
-            if index % 2 == 0 {
-                self[index / 2] >> 4
-            } else {
-                self[index / 2] & 0x0F
-            },
-        )
+        Nibble::from(if index % 2 == 0 {
+            self[index / 2] >> 4
+        } else {
+            self[index / 2] & 0x0F
+        })
     }
 
     /// Returns the length of common prefix of `self` and `other` in nibbles.
