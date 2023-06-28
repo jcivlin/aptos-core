@@ -93,8 +93,8 @@ mod tests {
     }
 
     fn write_peer_set(peers: &PeerSet, path: &Path) {
-        let file_contents = serde_yaml::to_vec(peers).unwrap();
-        std::fs::write(path, file_contents).unwrap();
+        let file_contents = serde_yaml::to_string(peers).unwrap();
+        std::fs::write(path, file_contents.as_bytes()).unwrap();
     }
 
     #[tokio::test]
@@ -130,8 +130,8 @@ mod tests {
             PeerId::random(),
             Peer::new(addrs, keys, PeerRole::Downstream),
         );
-        let file_contents = serde_yaml::to_vec(&peers).unwrap();
-        std::fs::write(path.as_ref(), file_contents).unwrap();
+        let file_contents = serde_yaml::to_string(&peers).unwrap();
+        std::fs::write(path.as_ref(), file_contents.as_bytes()).unwrap();
         // Clear old items
         while conn_mgr_reqs_rx.next().await.is_none() {}
 

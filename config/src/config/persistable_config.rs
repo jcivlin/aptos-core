@@ -22,13 +22,13 @@ pub trait PersistableConfig: Serialize + DeserializeOwned {
     /// Save the config to disk at the given output path
     fn save_config<P: AsRef<Path>>(&self, output_file: P) -> Result<(), Error> {
         // Serialize the config to a string
-        let serialized_config = serde_yaml::to_vec(&self)
+        let serialized_config = serde_yaml::to_string(&self)
             .map_err(|e| Error::Yaml(output_file.as_ref().to_str().unwrap().to_string(), e))?;
 
         // Create the file and write the serialized config to the file
         let mut file = File::create(output_file.as_ref())
             .map_err(|e| Error::IO(output_file.as_ref().to_str().unwrap().to_string(), e))?;
-        file.write_all(&serialized_config)
+        file.write_all(serialized_config.as_bytes())
             .map_err(|e| Error::IO(output_file.as_ref().to_str().unwrap().to_string(), e))?;
 
         Ok(())

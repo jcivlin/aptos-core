@@ -330,6 +330,6 @@ fn add_identity_to_config(
 }
 
 pub fn write_peerset_to_file(path: &Path, peers: PeerSet) {
-    let file_contents = serde_yaml::to_vec(&peers).unwrap();
-    std::fs::write(path, file_contents).unwrap();
+    let file_contents = serde_yaml::to_string(&peers).unwrap();
+    std::fs::write(path, file_contents.as_bytes()).unwrap();
 }
